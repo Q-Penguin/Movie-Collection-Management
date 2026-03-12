@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Movie Collection Management System</title>
 <style>
+    /*styling*/
     body {
         font-family: Arial;
         background-color: #f5f5f5;
@@ -17,14 +18,14 @@
     th { background: #065A82; color: white; padding: 12px; }
     td { padding: 12px; border-bottom: 1px solid #ddd; }
 
-    .add-movie {
+    /*add movie styling*/
+    .add-movie-review-user {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     text-align: center;
 
-    
 }
    
 </style>
@@ -43,7 +44,19 @@
     </div>
 </div>
 
-<div class="section add-movie">
+<div class="section">
+  <h2>Movie Reviews</h2>
+  <div id="reviewList">Loading reviews...</div>
+</div>
+
+
+<div class="section">
+  <h2>Users</h2>
+  <div id="userList">Loading users...</div>
+</div>
+
+
+<div class="section add-movie-review-user">
   <h2>Add a New Movie</h2>
   <form id="addMovieForm">
     <input type="text" name="title" placeholder="Title" required>
@@ -52,11 +65,37 @@
     <input type="number" name="duration" placeholder="Duration (min)" required>
     <button type="submit">Add Movie</button>
   </form>
+
+  <h2>Add a Review</h2>
+  <form id="addReviewForm">
+    <select name="user_id" required>
+      <option value="">Select User</option>
+    </select>
+    <select name="movie_id" required>
+      <option value="">Select Movie</option>
+    </select>
+    <input type="number" name="rating" placeholder="Rating (1-5)" min="1" max="5" required>
+    <input type="text" name="review_text" placeholder="Review">
+    <button type="submit">Add Review</button>
+  </form>
+
+  <h2>Add a New User</h2>
+  <form id="addUserForm">
+    <input type="text" name="name" placeholder="Name" required>
+    <input type="email" name="email" placeholder="Email" required>
+    <input type="number" name="age" placeholder="Age">
+    <button type="submit">Add User</button>
+  </form>
 </div>
+
+
+
 
 <script>
 const API_URL = 'http://localhost:3000/api';
 let allMovies = [];
+let allReviews = [];
+let allUsers = [];
 
 // Load movies from backend
 async function loadMovies() {
@@ -70,12 +109,14 @@ async function loadMovies() {
     }
 }
 
+//delete movie
 async function deleteMovie(id) {
     await fetch(`${API_URL}/movies/${id}`, { method: 'DELETE' });
     allMovies = allMovies.filter(m => m.movie_id !== id);
     displayMovies(allMovies);
 }
 
+//edit movie
 async function editMovie(id, currentTitle, currentYear, currentGenre, currentDuration) {
   const newTitle = prompt('Enter new title:', currentTitle);
   if (!newTitle) return;
@@ -117,6 +158,204 @@ async function editMovie(id, currentTitle, currentYear, currentGenre, currentDur
   }
 }
 
+//display reviews
+async function loadReviews() {
+  try {
+    const res = await fetch(`${API_URL}/reviews`);
+    allReviews = await res.json(); // <-- save globally
+    displayReviews(allReviews);
+  } catch (err) {
+    console.error(err);
+    document.getElementById('reviewList').textContent = 'Error loading reviews';
+  }
+}
+
+// Call when page loads
+window.addEventListener('DOMContentLoaded', () => {
+  loadMovies();
+  loadReviews();
+});
+
+//display users
+async function loadUsers() {
+  try {
+    const response = await fetch(`${API_URL}/users`);
+    const users = await response.json();
+
+    const container = document.getElementById('userList');
+    container.innerHTML = '';
+
+    if (users.length === 0) {
+      container.textContent = 'No users yet.';
+      return;
+    }
+
+    let html = '<table>';
+    html += '<tr><th>Name</th><th>Email</th><th>Age</th><th>Joined</th><th>Actions</th></tr>';
+
+    users.forEach(u => {
+      html += `<tr>
+                  <td>${u.name}</td>
+                  <td>${u.email}</td>
+                  <td>${u.age || ''}</td>
+                  <td>${new Date(u.join_date).toLocaleDateString()}</td>
+                  <td>
+                    <button onclick="editUser(${u.user_id}, '${u.name}', '${u.email}', ${u.age || ''})">Edit</button>
+                    <button onclick="deleteUser(${u.user_id})">Delete</button>
+                  </td>
+               </tr>`;
+    });
+
+    html += '</table>';
+    container.innerHTML = html;
+
+  } catch (err) {
+    console.error(err);
+    document.getElementById('userList').textContent = 'Error loading users';
+  }
+}
+
+// Call when page loads
+window.addEventListener('DOMContentLoaded', () => {
+  loadMovies();
+  loadReviews();
+  loadUsers();
+  populateDropdowns(); // for review form
+});
+
+async function populateDropdowns() {
+  try {
+    const [usersRes, moviesRes] = await Promise.all([
+      fetch(`${API_URL}/users`),
+      fetch(`${API_URL}/movies`)
+    ]);
+    const users = await usersRes.json();
+    const movies = await moviesRes.json();
+
+    const userSelect = document.querySelector('#addReviewForm select[name="user_id"]');
+    const movieSelect = document.querySelector('#addReviewForm select[name="movie_id"]');
+
+    // Clear old options, keep placeholder
+    userSelect.innerHTML = '<option value="">Select User</option>';
+    movieSelect.innerHTML = '<option value="">Select Movie</option>';
+
+    // Add new options
+    users.forEach(u => {
+      const option = document.createElement('option');
+      option.value = u.user_id;
+      option.textContent = u.name;
+      userSelect.appendChild(option);
+    });
+
+    movies.forEach(m => {
+      const option = document.createElement('option');
+      option.value = m.movie_id;
+      option.textContent = m.title;
+      movieSelect.appendChild(option);
+    });
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+// Call on page load
+window.addEventListener('DOMContentLoaded', populateDropdowns);
+
+//delete review
+async function deleteReview(id) {
+  try {
+    const res = await fetch(`${API_URL}/reviews/${id}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete review');
+    alert('Review deleted!');
+    loadReviews(); // refresh the table
+  } catch (err) {
+    console.error(err);
+    alert('Error deleting review: ' + err.message);
+  }
+}
+
+//edit review
+async function editReview(reviewId, currentRating, currentText) {
+    const newRating = prompt('Enter new rating (1-5):', currentRating || 1);
+    if (!newRating) return;
+
+    const ratingNum = parseInt(newRating);
+    if (isNaN(ratingNum) || ratingNum < 1 || ratingNum > 5) {
+      alert('Rating must be 1-5');
+      return;
+    }
+
+    const newText = prompt('Enter review text:', currentText || '');
+    if (newText === null) return;
+
+    try {
+        const res = await fetch(`${API_URL}/reviews/${reviewId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rating: ratingNum, review_text: newText })
+        });
+
+        if (!res.ok) throw new Error('Failed to update review');
+
+        const updatedReview = await res.json();
+
+        // Replace in allReviews
+        allReviews = allReviews.map(r => r.review_id === reviewId ? updatedReview : r);
+
+        displayReviews(allReviews);
+
+    } catch (err) {
+        console.error('Error updating review:', err);
+        alert('Error updating review');
+    }
+}
+
+//delete user
+async function deleteUser(userId) {
+  try {
+    const res = await fetch(`${API_URL}/users/${userId}`, { method: 'DELETE' });
+    if (!res.ok) throw new Error('Failed to delete user');
+    alert('User deleted!');
+    loadUsers(); // Refresh the table
+  } catch (err) {
+    console.error(err);
+    alert('Error deleting user: ' + err.message);
+  }
+}
+
+//edit user
+async function editUser(userId, currentName, currentEmail, currentAge) {
+  const newName = prompt('Enter new name:', currentName);
+  if (!newName) return;
+
+  const newEmail = prompt('Enter new email:', currentEmail);
+  if (!newEmail) return;
+
+  const newAge = prompt('Enter new age:', currentAge || '');
+  if (newAge === null) return;
+
+  try {
+    const res = await fetch(`${API_URL}/users/${userId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: newName,
+        email: newEmail,
+        age: parseInt(newAge)
+      })
+    });
+
+    if (!res.ok) throw new Error('Failed to update user');
+    alert('User updated!');
+    loadUsers(); // Refresh the table
+  } catch (err) {
+    console.error(err);
+    alert('Error updating user: ' + err.message);
+  }
+}
+
+
+//display movies
 function displayMovies(movies) {
     const container = document.getElementById('movieList');
     container.innerHTML = '';
@@ -171,7 +410,102 @@ function displayMovies(movies) {
     container.appendChild(table);
 }
 
-// Search functionality
+//display reviews
+function displayReviews(reviews) {
+  const container = document.getElementById('reviewList');
+  container.innerHTML = '';
+
+  if (reviews.length === 0) {
+    container.textContent = 'No reviews found.';
+    return;
+  }
+
+  const table = document.createElement('table');
+  const headerRow = document.createElement('tr');
+  ['Movie', 'User', 'Rating', 'Review', 'Actions'].forEach(text => {
+    const th = document.createElement('th');
+    th.textContent = text;
+    headerRow.appendChild(th);
+  });
+  table.appendChild(headerRow);
+
+  reviews.forEach(r => {
+    const row = document.createElement('tr');
+    ['movie_title', 'user_name', 'rating', 'review_text'].forEach(field => {
+      const td = document.createElement('td');
+      td.textContent = r[field];
+      row.appendChild(td);
+    });
+
+    const actionTd = document.createElement('td');
+
+    const editBtn = document.createElement('button');
+    editBtn.textContent = 'Edit';
+    editBtn.addEventListener('click', () => editReview(r.review_id, r.user_id, r.movie_id, r.rating, r.review_text));
+    actionTd.appendChild(editBtn);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.textContent = 'Delete';
+    deleteBtn.addEventListener('click', () => deleteReview(r.review_id));
+    actionTd.appendChild(deleteBtn);
+
+    row.appendChild(actionTd);
+    table.appendChild(row);
+  });
+
+  container.appendChild(table);
+}
+
+
+//display users
+function displayUsers(users) {
+  const container = document.getElementById('userList');
+  container.innerHTML = '';
+
+  if (users.length === 0) {
+    container.textContent = 'No users found.';
+    return;
+  }
+
+  const table = document.createElement('table');
+  const headerRow = document.createElement('tr');
+  ['Name', 'Email', 'Age', 'Actions'].forEach(text => {
+    const th = document.createElement('th');
+    th.textContent = text;
+    headerRow.appendChild(th);
+  });
+  table.appendChild(headerRow);
+
+  users.forEach(user => {
+    const row = document.createElement('tr');
+
+    ['name', 'email', 'age'].forEach(field => {
+      const td = document.createElement('td');
+      td.textContent = user[field];
+      row.appendChild(td);
+    });
+
+    // Actions
+    const actionTd = document.createElement('td');
+
+    const editBtn = document.createElement('button');
+    editBtn.textContent = 'Edit';
+    editBtn.addEventListener('click', () => editUser(user.user_id, user.name, user.email, user.age));
+    actionTd.appendChild(editBtn);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.textContent = 'Delete';
+    deleteBtn.addEventListener('click', () => deleteUser(user.user_id));
+    actionTd.appendChild(deleteBtn);
+
+    row.appendChild(actionTd);
+    table.appendChild(row);
+  });
+
+  container.appendChild(table);
+}
+
+// Search bar
 document.getElementById('searchInput').addEventListener('input', (e) => {
     const search = e.target.value.toLowerCase();
     const filtered = allMovies.filter(m => m.title.toLowerCase().includes(search));
@@ -214,6 +548,65 @@ document.getElementById('addMovieForm').addEventListener('submit', async (e) => 
         console.error(err);
         alert('Error adding movie: ' + err.message);
     }
+});
+
+//handle add review forms
+document.getElementById('addReviewForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const newReview = {
+    user_id: parseInt(form.user_id.value),
+    movie_id: parseInt(form.movie_id.value),
+    rating: parseInt(form.rating.value),
+    review_text: form.review_text.value
+  };
+
+  try {
+    const res = await fetch(`${API_URL}/reviews`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newReview)
+    });
+
+    if (!res.ok) throw new Error('Failed to add review');
+
+    const addedReview = await res.json();
+    loadReviews();  // reload reviews
+    form.reset();
+  } catch (err) {
+    console.error(err);
+    alert('Error adding review: ' + err.message);
+  }
+});
+
+document.getElementById('addUserForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const form = e.target;
+  const newUser = {
+    name: form.name.value,
+    email: form.email.value,
+    age: form.age.value ? parseInt(form.age.value) : null
+  };
+
+  try {
+    const res = await fetch(`${API_URL}/users`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newUser)
+    });
+
+    if (!res.ok) throw new Error('Failed to add user');
+
+    const addedUser = await res.json();
+
+    loadUsers();   
+    populateDropdowns(); 
+    form.reset();     
+
+  } catch (err) {
+    console.error(err);
+    alert('Error adding user: ' + err.message);
+  }
 });
 
 // Load movies when page loads
