@@ -19,16 +19,11 @@ A full-stack web application for managing a personal movie collection and writin
 
 ```
 Movie-Collection-Management/
-├── backend/
-│   ├── server.js        
-│   └── package.json       
-├── frontend/
-│   ├── index.html        
-│   ├── styles.css      
-│   └── script.js        
-├── database/
-│   └── database.sql     
-└── README.md           
+├── database.sql
+├── index.html
+├── package.json
+├── README.md
+└── server.js
 ```
 
 ## Setup Instructions
