@@ -23,6 +23,8 @@
     align-items: center;
     justify-content: center;
     text-align: center;
+
+    
 }
    
 </style>
@@ -74,6 +76,47 @@ async function deleteMovie(id) {
     displayMovies(allMovies);
 }
 
+async function editMovie(id, currentTitle, currentYear, currentGenre, currentDuration) {
+  const newTitle = prompt('Enter new title:', currentTitle);
+  if (!newTitle) return;
+
+  const newYear = prompt('Enter new release year:', currentYear);
+  if (!newYear) return;
+
+  const newGenre = prompt('Enter genre:', currentGenre);
+  if (!newGenre) return;
+
+  const newDuration = prompt('Enter duration (min):', currentDuration);
+  if (!newDuration) return;
+
+  try {
+    const response = await fetch(`http://localhost:3000/api/movies/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: newTitle,
+        release_year: parseInt(newYear),
+        genre: newGenre,
+        duration: parseInt(newDuration)
+      })
+    });
+
+    if (response.ok) {
+      const updatedMovie = await response.json();
+
+      // Update the movie in allMovies array
+      allMovies = allMovies.map(m => (m.movie_id === id ? updatedMovie : m));
+      displayMovies(allMovies);
+
+      alert('Movie updated successfully!');
+    } else {
+      alert('Error updating movie');
+    }
+  } catch (err) {
+    alert('Error: ' + err.message);
+  }
+}
+
 function displayMovies(movies) {
     const container = document.getElementById('movieList');
     container.innerHTML = '';
@@ -105,10 +148,21 @@ function displayMovies(movies) {
 
         // Delete button cell
         const actionTd = document.createElement('td');
+
+        // Edit button
+        const editBtn = document.createElement('button');
+        editBtn.textContent = 'Edit';
+        editBtn.addEventListener('click', () =>
+        editMovie(movie.movie_id, movie.title, movie.release_year, movie.genre, movie.duration)
+        );
+        actionTd.appendChild(editBtn);
+
+        // Delete button
         const deleteBtn = document.createElement('button');
         deleteBtn.textContent = 'Delete';
         deleteBtn.addEventListener('click', () => deleteMovie(movie.movie_id));
         actionTd.appendChild(deleteBtn);
+
         row.appendChild(actionTd);
 
         table.appendChild(row);
