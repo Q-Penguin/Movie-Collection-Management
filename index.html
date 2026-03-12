@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Movie Collection Management System</title>
+<style>
+body {
+    font-family: Arial;
+    background-color: #f5f5f5;
+    padding: 20px;
+}
+.container { max-width: 1200px; margin: 0 auto; }
+h1 { color: #065A82; text-align: center; }
+.section { background: white; padding: 20px; margin: 20px 0; }
+table { width: 100%; border-collapse: collapse; }
+th { background: #065A82; color: white; padding: 12px; }
+td { padding: 12px; border-bottom: 1px solid #ddd; }
+</style>
+</head>
+<body>
+<div class="container">
+    <h1>Movie Collection Management System</h1>
+
+    <div class="section">
+        <input type="text" id="searchInput" placeholder="Search movies...">
+    </div>
+
+    <div class="section">
+        <h2>Movies Collection</h2>
+        <div id="movieList">Loading...</div>
+    </div>
+</div>
+
+<script>
+const API_URL = 'http://localhost:3000/api';
+let allMovies = [];
+
+// Load movies from backend
+async function loadMovies() {
+    try {
+        const response = await fetch(`${API_URL}/movies`);
+        allMovies = await response.json();
+        displayMovies(allMovies);
+    } catch (err) {
+        document.getElementById('movieList').innerHTML = 'Error loading movies';
+        console.error(err);
+    }
+}
+
+// Display movies in a table
+function displayMovies(movies) {
+    if (movies.length === 0) {
+        document.getElementById('movieList').innerHTML = 'No movies found.';
+        return;
+    }
+
+    let html = '<table>';
+    html += '<tr><th>Title</th><th>Year</th><th>Genre</th><th>Duration (min)</th></tr>';
+    movies.forEach(movie => {
+        html += `<tr>
+            <td>${movie.title}</td>
+            <td>${movie.release_year}</td>
+            <td>${movie.genre}</td>
+            <td>${movie.duration}</td>
+        </tr>`;
+    });
+    html += '</table>';
+    document.getElementById('movieList').innerHTML = html;
+}
+
+// Search functionality
+document.getElementById('searchInput').addEventListener('input', (e) => {
+    const search = e.target.value.toLowerCase();
+    const filtered = allMovies.filter(m => m.title.toLowerCase().includes(search));
+    displayMovies(filtered);
+});
+
+// Load movies when page loads
+window.addEventListener('DOMContentLoaded', loadMovies);
+</script>
+</body>
+</html>
