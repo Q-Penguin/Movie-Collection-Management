@@ -12,10 +12,10 @@ const pool = new Pool({
  host: 'localhost',
  database: 'movie_collection',
  password: 'Cranbrook1',
- port: 5433
+ port: 5432
 });
 
-app.get('/api/books', async (req, res) => {
+app.get('/api/movies', async (req, res) => {
  try {
  const result = await pool.query('SELECT * FROM movies');
  res.json(result.rows);
@@ -41,3 +41,5 @@ app.post('/api/movies', async (req, res) => {
 app.listen(PORT, () => {
  console.log(`Server running on port ${PORT}`);
 });
+
+app.get('/', (req,res) => res.send('Server is running!'));
