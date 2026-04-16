@@ -164,6 +164,45 @@ app.get('/api/movies/:id/reviews', async (req, res) => {
   }
 });
 
+app.get('/api/movies/:id/poster', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const dbResult = await pool.query(
+      'SELECT title, release_year FROM movies WHERE movie_id = $1',
+      [id]
+    );
+
+    if (dbResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Movie not found' });
+    }
+
+    const movie = dbResult.rows[0];
+
+    const apiKey = 'a752ad66';
+    const url = `http://www.omdbapi.com/?t=${encodeURIComponent(movie.title)}&y=${movie.release_year}&apikey=${apiKey}`;
+
+    const response = await fetch(url);
+
+    if (!response.ok) {
+      return res.status(500).json({ error: 'Public API request failed' });
+    }
+
+    const data = await response.json();
+
+    res.json({
+      title: movie.title,
+      poster: data.Poster,
+      imdbRating: data.imdbRating,
+      plot: data.Plot
+    });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to fetch movie info' });
+  }
+});
+
 // ─────────────────────────────────────────────
 // REVIEWS
 // ─────────────────────────────────────────────
