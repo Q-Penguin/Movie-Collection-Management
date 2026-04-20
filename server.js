@@ -16,9 +16,7 @@ const pool = new Pool({
   port: 5432
 });
 
-// ─────────────────────────────────────────────
-// MOVIES
-// ─────────────────────────────────────────────
+// movies
 
 // GET all movies
 app.get('/api/movies', async (req, res) => {
@@ -50,7 +48,6 @@ app.get('/api/movies/:id', async (req, res) => {
 app.post('/api/movies', async (req, res) => {
   const { title, release_year, genre, duration } = req.body;
 
-  // Required field checks
   if (!title || title.trim() === '') {
     return res.status(400).json({ error: 'title is required' });
   }
@@ -87,7 +84,6 @@ app.put('/api/movies/:id', async (req, res) => {
   const { id } = req.params;
   const { title, release_year, genre, duration } = req.body;
 
-  // Required field checks
   if (!title || title.trim() === '') {
     return res.status(400).json({ error: 'title is required' });
   }
@@ -142,7 +138,7 @@ app.get('/api/movies/:id/reviews', async (req, res) => {
   try {
     const { id } = req.params;
 
-    // First confirm the movie exists
+    // movie exists
     const movieCheck = await pool.query('SELECT * FROM movies WHERE movie_id = $1', [id]);
     if (movieCheck.rows.length === 0) {
       return res.status(404).json({ error: 'Movie not found' });
@@ -164,6 +160,7 @@ app.get('/api/movies/:id/reviews', async (req, res) => {
   }
 });
 
+//GET poster
 app.get('/api/movies/:id/poster', async (req, res) => {
   try {
     const { id } = req.params;
@@ -203,9 +200,7 @@ app.get('/api/movies/:id/poster', async (req, res) => {
   }
 });
 
-// ─────────────────────────────────────────────
-// REVIEWS
-// ─────────────────────────────────────────────
+// reviews
 
 // GET all reviews
 app.get('/api/reviews', async (req, res) => {
@@ -254,7 +249,6 @@ app.get('/api/reviews/:id', async (req, res) => {
 app.post('/api/reviews', async (req, res) => {
   const { movie_id, user_id, rating, review_text } = req.body;
 
-  // Required field checks
   if (movie_id === undefined || movie_id === null) {
     return res.status(400).json({ error: 'movie_id is required' });
   }
@@ -278,13 +272,13 @@ app.post('/api/reviews', async (req, res) => {
   }
 
   try {
-    // Confirm movie exists
+    // movie exists
     const movieCheck = await pool.query('SELECT * FROM movies WHERE movie_id = $1', [movie_id]);
     if (movieCheck.rows.length === 0) {
       return res.status(404).json({ error: 'Movie not found' });
     }
 
-    // Confirm user exists
+    // user exists
     const userCheck = await pool.query('SELECT * FROM users WHERE user_id = $1', [user_id]);
     if (userCheck.rows.length === 0) {
       return res.status(404).json({ error: 'User not found' });
@@ -306,7 +300,6 @@ app.put('/api/reviews/:id', async (req, res) => {
   const { id } = req.params;
   const { rating, review_text } = req.body;
 
-  // Required field checks
   if (rating === undefined || rating === null) {
     return res.status(400).json({ error: 'rating is required' });
   }
@@ -318,7 +311,7 @@ app.put('/api/reviews/:id', async (req, res) => {
   }
 
   try {
-    // Confirm review exists
+    // review exists
     const reviewCheck = await pool.query('SELECT * FROM reviews WHERE review_id = $1', [id]);
     if (reviewCheck.rows.length === 0) {
       return res.status(404).json({ error: 'Review not found' });
@@ -360,9 +353,7 @@ app.delete('/api/reviews/:id', async (req, res) => {
   }
 });
 
-// ─────────────────────────────────────────────
-// USERS
-// ─────────────────────────────────────────────
+// users
 
 // GET all users
 app.get('/api/users', async (req, res) => {
@@ -401,7 +392,7 @@ app.post('/api/users', async (req, res) => {
   if (!email || email.trim() === '') {
     return res.status(400).json({ error: 'email is required' });
   }
-  // Basic email format check
+  //email format check
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   if (!emailRegex.test(email.trim())) {
     return res.status(400).json({ error: 'email must be a valid email address' });
@@ -433,7 +424,6 @@ app.put('/api/users/:id', async (req, res) => {
   const { id } = req.params;
   const { name, email, age } = req.body;
 
-  // Required field checks
   if (!name || name.trim() === '') {
     return res.status(400).json({ error: 'name is required' });
   }
@@ -483,9 +473,6 @@ app.delete('/api/users/:id', async (req, res) => {
   }
 });
 
-// ─────────────────────────────────────────────
-// SERVER
-// ─────────────────────────────────────────────
 app.get('/', (req, res) => res.send('Server is running!'));
 
 app.listen(PORT, () => {
